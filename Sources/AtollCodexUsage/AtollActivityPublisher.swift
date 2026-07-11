@@ -82,7 +82,9 @@ final class AtollActivityPublisher {
                 "badgeIcon": [
                     "type": "image",
                     "data": Self.chatGPTMarkBase64,
-                    "size": ["width": 32, "height": 32],
+                    // CGSize's Codable representation in the Atoll RPC
+                    // transport is an ordered [width, height] pair.
+                    "size": [32, 32],
                     "cornerRadius": 0
                 ],
                 "preferredHeight": 300,

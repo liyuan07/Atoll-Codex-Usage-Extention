@@ -27,6 +27,10 @@ CLI access token from `~/.codex/auth.json` only to make a request to
 `chatgpt.com/backend-api/wham/usage`; it never persists, logs, or refreshes
 that token. The refresh interval is five minutes.
 
+If macOS rejects that request in `URLSession` because of a local TLS setup, the
+app retries via the system `curl`; the bearer token is passed through standard
+input rather than a command-line argument.
+
 The current Codex usage response exposes 5-hour and weekly quota windows only.
 The second dashboard page therefore keeps a clearly marked 24-hour slot rather
 than presenting an invented token total.

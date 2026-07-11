@@ -112,7 +112,61 @@ public struct CodexUsageFetcher: Sendable {
         } catch let error as CodexUsageError {
             throw error
         } catch {
-            throw CodexUsageError.transport(error.localizedDescription)
+            // Some macOS network configurations reject the endpoint's TLS
+            // connection in URLSession even though the system curl succeeds.
+            // Use curl only as a transport fallback; credentials are supplied
+            // through its standard input, never command-line arguments.
+            do {
+                let data = try await Self.fetchUsingCurl(token: token, endpoint: endpoint)
+                return try Self.decode(data: data)
+            } catch let fallbackError as CodexUsageError {
+                throw fallbackError
+            } catch {
+                throw CodexUsageError.transport(error.localizedDescription)
+            }
+        }
+    }
+
+    private static func fetchUsingCurl(token: String, endpoint: URL) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            let process = Process()
+            let input = Pipe()
+            let output = Pipe()
+            let errorOutput = Pipe()
+
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+            process.arguments = [
+                "--silent", "--show-error", "--fail",
+                "--config", "-",
+                endpoint.absoluteString
+            ]
+            process.standardInput = input
+            process.standardOutput = output
+            process.standardError = errorOutput
+            process.terminationHandler = { completedProcess in
+                let data = output.fileHandleForReading.readDataToEndOfFile()
+                let errors = errorOutput.fileHandleForReading.readDataToEndOfFile()
+                if completedProcess.terminationStatus == 0 {
+                    continuation.resume(returning: data)
+                } else {
+                    let message = String(data: errors, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    continuation.resume(throwing: CodexUsageError.transport(message?.isEmpty == false ? message! : "curl fallback failed"))
+                }
+            }
+
+            do {
+                try process.run()
+                let escapedToken = token
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "\"", with: "\\\"")
+                    .replacingOccurrences(of: "\n", with: "")
+                    .replacingOccurrences(of: "\r", with: "")
+                let config = "header = \"Authorization: Bearer \(escapedToken)\"\nheader = \"Accept: application/json\"\nconnect-timeout = 15\nmax-time = 20\n"
+                input.fileHandleForWriting.write(Data(config.utf8))
+                try input.fileHandleForWriting.close()
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 

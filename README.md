@@ -32,8 +32,10 @@ app retries via the system `curl`; the bearer token is passed through standard
 input rather than a command-line argument.
 
 The current Codex usage response exposes 5-hour and weekly quota windows only.
-The second dashboard page therefore keeps a clearly marked 24-hour slot rather
-than presenting an invented token total.
+The second dashboard page supplements those quota windows with actual local
+Codex CLI token throughput for rolling 5-hour, 24-hour, and 7-day periods. It
+reads only recent `~/.codex/sessions/**/rollout-*.jsonl` token-count records;
+those logs never leave the Mac.
 
 Atoll's current RPC plugin surface exposes a dedicated extension notch tab. It
 does not let plugins inject content into the built-in Home tab or choose the

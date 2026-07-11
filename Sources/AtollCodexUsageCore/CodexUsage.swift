@@ -26,11 +26,18 @@ public struct CodexUsage: Equatable, Sendable {
     public let fiveHour: WindowUsage
     public let weekly: WindowUsage
     public let plan: String?
+    public let tokenUsage: CodexTokenUsage
 
-    public init(fiveHour: WindowUsage, weekly: WindowUsage, plan: String?) {
+    public init(
+        fiveHour: WindowUsage,
+        weekly: WindowUsage,
+        plan: String?,
+        tokenUsage: CodexTokenUsage = .zero
+    ) {
         self.fiveHour = fiveHour
         self.weekly = weekly
         self.plan = plan
+        self.tokenUsage = tokenUsage
     }
 
     public var notchText: String {
@@ -110,7 +117,16 @@ public struct CodexUsageFetcher: Sendable {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status == 401 { throw CodexUsageError.expiredCredentials }
             guard status == 200 else { throw CodexUsageError.httpStatus(status) }
-            return try Self.decode(data: data)
+            let usage = try Self.decode(data: data)
+            let tokens = await Task.detached(priority: .utility) {
+                CodexTokenUsageScanner.scan()
+            }.value
+            return CodexUsage(
+                fiveHour: usage.fiveHour,
+                weekly: usage.weekly,
+                plan: usage.plan,
+                tokenUsage: tokens
+            )
         } catch let error as CodexUsageError {
             throw error
         } catch {
@@ -120,7 +136,16 @@ public struct CodexUsageFetcher: Sendable {
             // through its standard input, never command-line arguments.
             do {
                 let data = try await Self.fetchUsingCurl(token: token, endpoint: endpoint)
-                return try Self.decode(data: data)
+                let usage = try Self.decode(data: data)
+                let tokens = await Task.detached(priority: .utility) {
+                    CodexTokenUsageScanner.scan()
+                }.value
+                return CodexUsage(
+                    fiveHour: usage.fiveHour,
+                    weekly: usage.weekly,
+                    plan: usage.plan,
+                    tokenUsage: tokens
+                )
             } catch let fallbackError as CodexUsageError {
                 throw fallbackError
             } catch {

@@ -101,8 +101,9 @@ final class AtollActivityPublisher {
         let weeklyReset = htmlEscape(relativeResetDescription(usage.weekly.resetAt))
         let five = usage.fiveHour.remainingPercent
         let week = usage.weekly.remainingPercent
-        let fiveUsed = usage.fiveHour.usedPercent
-        let weekUsed = usage.weekly.usedPercent
+        let fiveHourTokens = compactTokenCount(usage.tokenUsage.fiveHour)
+        let dailyTokens = compactTokenCount(usage.tokenUsage.twentyFourHour)
+        let weeklyTokens = compactTokenCount(usage.tokenUsage.weekly)
         let fiveBars = barSegments(filledPercent: five)
         let weekBars = barSegments(filledPercent: week)
 
@@ -113,7 +114,7 @@ final class AtollActivityPublisher {
         .pages{position:relative;height:84px}.page{position:absolute;inset:0;display:grid;opacity:0;transform:translateX(16px);transition:opacity .18s ease,transform .18s ease}.page.active{opacity:1;transform:translateX(0)}.quota{grid-template-columns:102px minmax(0,1fr) minmax(0,1fr);gap:24px}.identity{height:60px;display:flex;align-items:center;justify-content:flex-start;gap:7px}.openai{width:21px;height:21px;color:#f5f6f8;filter:drop-shadow(0 0 5px #ffffff28)}.pill{font-size:10px;font-weight:800;color:#d4d4da;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:3px 7px;letter-spacing:.45px}
         .metric{padding-top:11px}.row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}.label{font-size:13px;color:#a8aab3;font-weight:800;white-space:nowrap}.value-line{display:flex;align-items:baseline;gap:7px}.value{font-size:26px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:12px;color:#a8aab3;margin-left:2px}.inline-reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:750;color:#848792;white-space:nowrap}
         .bar{display:grid;grid-template-columns:repeat(30,1fr);gap:3px;height:14px}.seg{height:14px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}
-        .stats{grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 8px 0}.stat{padding:2px 16px}.stat:not(:last-child){border-right:1px solid #ffffff12}.big{font-size:27px;font-weight:820;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1}.cap{font-size:11px;color:#a8aab3;font-weight:750;margin-top:6px}.subcap{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:#737680;margin-top:3px}.na{color:#858995;text-shadow:none}.status{position:absolute;right:10px;bottom:0;font-size:11px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:7px;height:7px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:6px}
+        .stats{grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 8px 0}.stat{padding:2px 16px}.stat:not(:last-child){border-right:1px solid #ffffff12}.token-label{font-size:12px;color:#a8aab3;font-weight:800}.token-value{font-size:27px;font-weight:820;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1;margin-top:6px}.cap{font-size:10px;color:#737680;font-weight:750;margin-top:4px}.status{position:absolute;right:10px;bottom:0;font-size:11px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:7px;height:7px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:6px}
         .nav{position:absolute;left:8px;bottom:3px;display:flex;gap:6px}.nav button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:#ffffff45}.nav button.active{background:#fff}.hint{position:absolute;left:32px;bottom:0;font-size:10px;color:#ffffff45;font-weight:700}
         </style></head><body tabindex="0"><div class="wrap">
         <div class="pages">
@@ -123,9 +124,9 @@ final class AtollActivityPublisher {
         <div class="metric"><div class="row"><div class="label">1 week</div><div class="value-line"><div class="inline-reset">\(weeklyReset)</div><div class="value">\(week)<span>%</span></div></div></div><div class="bar">\(weekBars)</div></div>
         </section>
         <section class="page stats" id="p1">
-        <div class="stat"><div class="big">\(fiveUsed)<span style="font-size:15px;color:#8da3b8">%</span></div><div class="cap">5h used</div><div class="subcap">\(fiveReset)</div></div>
-        <div class="stat"><div class="big na">—</div><div class="cap">24h tokens</div><div class="subcap">not exposed</div></div>
-        <div class="stat"><div class="big">\(weekUsed)<span style="font-size:15px;color:#8da3b8">%</span></div><div class="cap">1 week used</div><div class="subcap">\(weeklyReset)</div></div>
+        <div class="stat"><div class="token-label">5h</div><div class="token-value">\(fiveHourTokens)</div><div class="cap">tokens used</div></div>
+        <div class="stat"><div class="token-label">24h</div><div class="token-value">\(dailyTokens)</div><div class="cap">tokens used</div></div>
+        <div class="stat"><div class="token-label">1 week</div><div class="token-value">\(weeklyTokens)</div><div class="cap">tokens used</div></div>
         </section></div>
         <div class="nav"><button class="active" onclick="show(0)"></button><button onclick="show(1)"></button></div><div class="hint">← →</div><div class="status"><span class="dotgreen"></span>synced <span id="age">now</span></div></div>
         <script>let page=0,ts=\(generatedAt);function show(n){page=n;document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',i===n))}document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show((page+1)%2);if(e.key==='ArrowLeft')show((page+1)%2)});function tick(){let s=Math.max(0,Math.floor((Date.now()-ts)/1000));document.getElementById('age').textContent=s<2?'now':s+'s ago'}setInterval(tick,1000);tick();window.focus();</script>
@@ -139,6 +140,17 @@ final class AtollActivityPublisher {
         return (0..<segmentCount).map { index in
             "<i class=\"seg\(index < filled ? " on" : "")\"></i>"
         }.joined()
+    }
+
+    private func compactTokenCount(_ value: Int) -> String {
+        switch value {
+        case 1_000_000...:
+            return String(format: "%.1fM", Double(value) / 1_000_000)
+        case 1_000...:
+            return String(format: "%.1fK", Double(value) / 1_000)
+        default:
+            return "\(value)"
+        }
     }
 
     private func relativeResetDescription(_ date: Date?) -> String {

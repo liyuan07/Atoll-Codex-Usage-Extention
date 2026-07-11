@@ -7,16 +7,13 @@ let package = Package(
     products: [
         .executable(name: "AtollCodexUsage", targets: ["AtollCodexUsage"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/Ebullioscopic/AtollExtensionKit.git", branch: "main")
-    ],
+    dependencies: [],
     targets: [
         .target(name: "AtollCodexUsageCore"),
         .executableTarget(
             name: "AtollCodexUsage",
             dependencies: [
-                "AtollCodexUsageCore",
-                .product(name: "AtollExtensionKit", package: "AtollExtensionKit")
+                "AtollCodexUsageCore"
             ]
         ),
         .executableTarget(

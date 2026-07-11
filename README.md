@@ -1,12 +1,14 @@
 # Atoll Codex Usage
 
 An independent macOS menu-bar extension that displays Codex's 5-hour and
-weekly used quota in an Atoll Live Activity.
+weekly used quota in an Atoll Live Activity. It talks to Atoll through Atoll's
+local JSON-RPC WebSocket server on port 9020.
 
 ## Requirements
 
 - macOS 13 or later
 - Atoll with third-party extensions and extension live activities enabled
+- Atoll's RPC server listening on localhost port 9020
 - A logged-in Codex CLI (`codex login`)
 
 ## Build and run
@@ -16,8 +18,9 @@ bash build.sh
 open build/AtollCodexUsage.app
 ```
 
-On first launch, approve the extension in Atoll. The app reads the Codex CLI
-access token from `~/.codex/auth.json` only to make a request to
+On first launch, the extension registers itself with Atoll over RPC and should
+appear under Atoll Settings -> Extensions. The app reads the Codex CLI access
+token from `~/.codex/auth.json` only to make a request to
 `chatgpt.com/backend-api/wham/usage`; it never persists, logs, or refreshes
 that token. The refresh interval is five minutes.
 
@@ -27,23 +30,17 @@ menu-bar menu.
 
 ## Troubleshooting
 
-If the app launches but does not appear in Atoll Settings -> Extensions, restart
-Atoll and launch this app again. Atoll must successfully register its XPC Mach
-service (`com.ebullioscopic.Atoll.xpc`) before third-party apps can request
-authorization.
+If the app launches but does not appear in Atoll Settings -> Extensions, first
+confirm Atoll's RPC server is running:
 
-On macOS App Sandbox builds, Atoll's main app entitlement must include:
-
-```xml
-<key>com.apple.security.temporary-exception.mach-register.global-name</key>
-<array>
-    <string>com.ebullioscopic.Atoll.xpc</string>
-</array>
+```sh
+lsof -nP -iTCP:9020 -sTCP:LISTEN
 ```
 
-This repository's `DynamicIsland/DynamicIsland.entitlements` has been updated
-with that key. Rebuild and reinstall Atoll from source if your installed Atoll
-logs `listener failed to activate: xpc_error=[1: Operation not permitted]`.
+If nothing is listening, restart Atoll and make sure third-party extensions are
+enabled. Some Atoll builds fail to start the older XPC Mach service with
+`Operation not permitted`; this app intentionally uses Atoll's RPC server
+instead of that XPC path.
 
 ## Tests
 

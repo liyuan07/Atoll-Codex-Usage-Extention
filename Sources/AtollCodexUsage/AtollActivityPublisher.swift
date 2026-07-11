@@ -99,29 +99,31 @@ final class AtollActivityPublisher {
         let weeklyReset = htmlEscape(relativeResetDescription(usage.weekly.resetAt))
         let five = usage.fiveHour.remainingPercent
         let week = usage.weekly.remainingPercent
+        let fiveUsed = usage.fiveHour.usedPercent
+        let weekUsed = usage.weekly.usedPercent
         let fiveBars = barSegments(filledPercent: five)
         let weekBars = barSegments(filledPercent: week)
 
         return """
         <!doctype html><html><head><meta charset="utf-8"><style>
         *{box-sizing:border-box}html,body{margin:0;background:transparent;color:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;overflow:hidden}
-        body{height:178px;outline:none}.wrap{position:relative;height:178px;padding:2px 8px 0}
-        .top{display:flex;align-items:center;justify-content:center;height:30px;gap:9px}.brand{font-size:18px;font-weight:750;letter-spacing:.2px}.pill{font-size:10px;font-weight:800;color:#c9c9cf;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:2px 6px}
-        .pages{position:relative;height:122px}.page{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;gap:34px;opacity:0;transform:translateX(16px);transition:opacity .18s ease,transform .18s ease}.page.active{opacity:1;transform:translateX(0)}
-        .metric{padding-top:7px}.row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:9px}.label{font-size:13px;color:#a8aab3;font-weight:800}.value{font-size:28px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:13px;color:#a8aab3;margin-left:2px}
-        .bar{display:grid;grid-template-columns:repeat(34,1fr);gap:3px;height:20px;margin-bottom:10px}.seg{height:20px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}.reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:750;color:#a6a8b0}
-        .stats{grid-template-columns:1fr 1fr 1fr}.big{font-size:38px;font-weight:800;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1}.cap{font-size:12px;color:#a8aab3;font-weight:750;margin-top:8px}.status{position:absolute;right:8px;bottom:0;font-size:13px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:8px;height:8px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:7px}
+        body{height:178px;outline:none}.wrap{position:relative;height:178px;padding:20px 10px 0}
+        .identity{height:25px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}.openai{width:19px;height:19px;color:#f5f6f8;filter:drop-shadow(0 0 5px #ffffff28)}.pill{font-size:10px;font-weight:800;color:#d4d4da;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:3px 7px;letter-spacing:.45px}
+        .pages{position:relative;height:101px}.page{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;gap:30px;opacity:0;transform:translateX(16px);transition:opacity .18s ease,transform .18s ease}.page.active{opacity:1;transform:translateX(0)}
+        .metric{padding-top:2px}.row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px}.label{font-size:13px;color:#a8aab3;font-weight:800}.value-line{display:flex;align-items:baseline;gap:8px}.value{font-size:28px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:13px;color:#a8aab3;margin-left:2px}.inline-reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:750;color:#848792;white-space:nowrap}
+        .bar{display:grid;grid-template-columns:repeat(34,1fr);gap:3px;height:18px;margin-bottom:8px}.seg{height:18px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}.reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:750;color:#a6a8b0}
+        .stats{grid-template-columns:1fr 1fr 1fr;gap:18px;padding:4px 14px 0}.stat{padding-top:3px}.stat:not(:last-child){border-right:1px solid #ffffff12}.big{font-size:31px;font-weight:820;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1}.cap{font-size:11px;color:#a8aab3;font-weight:750;margin-top:7px}.subcap{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:#737680;margin-top:4px}.na{color:#858995;text-shadow:none}.status{position:absolute;right:10px;bottom:0;font-size:12px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:8px;height:8px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:7px}
         .nav{position:absolute;left:8px;bottom:3px;display:flex;gap:7px}.nav button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#ffffff45}.nav button.active{background:#fff}.hint{position:absolute;left:36px;bottom:0;font-size:11px;color:#ffffff45;font-weight:700}
-        </style></head><body tabindex="0"><div class="wrap"><div class="top"><div class="brand">Codex</div><div class="pill">\(plan)</div></div>
+        </style></head><body tabindex="0"><div class="wrap"><div class="identity"><svg class="openai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-label="OpenAI"><path d="M12 3.2a4.3 4.3 0 0 1 7.37 3.03 4.3 4.3 0 0 1 1.95 7.73 4.3 4.3 0 0 1-5.41 5.83A4.3 4.3 0 0 1 8.63 20a4.3 4.3 0 0 1-5.95-5.3A4.3 4.3 0 0 1 4.6 7.04 4.3 4.3 0 0 1 12 3.2Z"/><path d="m8.1 7.1 7.8 4.5v8.1M4.7 14.5l7.3-4.2 7.2 4.2M12 3.2v8.4l-7.3 4.2"/></svg><div class="pill">\(plan)</div></div>
         <div class="pages">
         <section class="page active" id="p0">
-        <div class="metric"><div class="row"><div class="label">5h</div><div class="value">\(five)<span>%</span></div></div><div class="bar">\(fiveBars)</div><div class="reset">resets \(fiveReset)</div></div>
-        <div class="metric"><div class="row"><div class="label">week</div><div class="value">\(week)<span>%</span></div></div><div class="bar">\(weekBars)</div><div class="reset">resets \(weeklyReset)</div></div>
+        <div class="metric"><div class="row"><div class="label">5h</div><div class="value-line"><div class="inline-reset">\(fiveReset)</div><div class="value">\(five)<span>%</span></div></div></div><div class="bar">\(fiveBars)</div><div class="reset">quota remaining</div></div>
+        <div class="metric"><div class="row"><div class="label">1 week</div><div class="value-line"><div class="inline-reset">\(weeklyReset)</div><div class="value">\(week)<span>%</span></div></div></div><div class="bar">\(weekBars)</div><div class="reset">quota remaining</div></div>
         </section>
         <section class="page stats" id="p1">
-        <div><div class="big">\(five)<span style="font-size:17px;color:#8da3b8">%</span></div><div class="cap">5h left</div></div>
-        <div><div class="big">\(week)<span style="font-size:17px;color:#8da3b8">%</span></div><div class="cap">weekly left</div></div>
-        <div><div class="big">5<span style="font-size:17px;color:#8da3b8">m</span></div><div class="cap">refresh</div></div>
+        <div class="stat"><div class="big">\(fiveUsed)<span style="font-size:15px;color:#8da3b8">%</span></div><div class="cap">5h used</div><div class="subcap">\(fiveReset)</div></div>
+        <div class="stat"><div class="big na">—</div><div class="cap">24h tokens</div><div class="subcap">not exposed</div></div>
+        <div class="stat"><div class="big">\(weekUsed)<span style="font-size:15px;color:#8da3b8">%</span></div><div class="cap">1 week used</div><div class="subcap">\(weeklyReset)</div></div>
         </section></div>
         <div class="nav"><button class="active" onclick="show(0)"></button><button onclick="show(1)"></button></div><div class="hint">← →</div><div class="status"><span class="dotgreen"></span>synced <span id="age">now</span></div></div>
         <script>let page=0,ts=\(generatedAt);function show(n){page=n;document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',i===n))}document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show((page+1)%2);if(e.key==='ArrowLeft')show((page+1)%2)});function tick(){let s=Math.max(0,Math.floor((Date.now()-ts)/1000));document.getElementById('age').textContent=s<2?'now':s+'s ago'}setInterval(tick,1000);tick();window.focus();</script>

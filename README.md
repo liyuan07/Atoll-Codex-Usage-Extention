@@ -20,10 +20,16 @@ open build/AtollCodexUsage.app
 
 On first launch, the extension registers itself with Atoll over RPC and should
 appear under Atoll Settings -> Extensions. Open or hover Atoll's notch and use
-the Codex extension tab to view the quota panel. The app reads the Codex CLI
-access token from `~/.codex/auth.json` only to make a request to
+the Codex extension tab to view the quota panel. The panel is a compact
+visual dashboard with segmented quota bars; click the dots or use left/right
+arrow keys after focusing the panel to switch views. The app reads the Codex
+CLI access token from `~/.codex/auth.json` only to make a request to
 `chatgpt.com/backend-api/wham/usage`; it never persists, logs, or refreshes
 that token. The refresh interval is five minutes.
+
+Atoll's current RPC plugin surface exposes a dedicated extension notch tab. It
+does not let plugins inject content into the built-in Home tab or choose the
+global tab-strip alignment.
 
 The endpoint and JSON shape are not a public OpenAI API. If they change, the
 app keeps the last successful display and reports the refresh failure in its

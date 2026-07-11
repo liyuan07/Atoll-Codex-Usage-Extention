@@ -5,6 +5,10 @@ import Foundation
 final class AtollActivityPublisher {
     static let activityID = "codex-usage"
     static let experienceID = "codex-usage-tab"
+    // 64 px transparent ChatGPT/OpenAI mark, derived from the MIT-licensed
+    // CodexIsland artwork and embedded so the extension has no runtime asset
+    // dependency outside its own app bundle.
+    private static let chatGPTMarkBase64 = "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"
 
     private let client: AtollRPCClient
     private let bundleIdentifier = "dev.atoll.extensions.codexusage"
@@ -75,7 +79,12 @@ final class AtollActivityPublisher {
                 // tab's icon in Atoll's extension ecosystem.
                 "title": "\u{200B}",
                 "iconSymbolName": "sparkles",
-                "badgeIcon": ["type": "symbol", "name": "sparkles", "size": 27],
+                "badgeIcon": [
+                    "type": "image",
+                    "data": Self.chatGPTMarkBase64,
+                    "size": ["width": 32, "height": 32],
+                    "cornerRadius": 0
+                ],
                 "preferredHeight": 300,
                 "allowWebInteraction": true,
                 "sections": [],
@@ -110,7 +119,7 @@ final class AtollActivityPublisher {
         return """
         <!doctype html><html><head><meta charset="utf-8"><style>
         *{box-sizing:border-box}html,body{margin:0;background:transparent;color:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;overflow:hidden}
-        body{height:162px;outline:none}.wrap{position:relative;height:162px;padding:2px 10px 0}.dashboard{height:140px}
+        body{height:162px;outline:none}.wrap{position:relative;height:162px;padding:2px 10px 0}.dashboard{height:140px;transform:translateY(-38px)}
         .quota{height:62px;display:grid;grid-template-columns:102px minmax(0,1fr) minmax(0,1fr);gap:24px}.identity{height:62px;display:flex;align-items:center;justify-content:flex-start;gap:7px}.openai{width:21px;height:21px;color:#f5f6f8;filter:drop-shadow(0 0 5px #ffffff28)}.pill{font-size:10px;font-weight:800;color:#d4d4da;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:3px 7px;letter-spacing:.45px}
         .metric{padding-top:11px}.row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}.label{font-size:13px;color:#a8aab3;font-weight:800;white-space:nowrap}.value-line{display:flex;align-items:baseline;gap:7px}.value{font-size:26px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:12px;color:#a8aab3;margin-left:2px}.inline-reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:750;color:#a6a8b0;white-space:nowrap}
         .bar{display:grid;grid-template-columns:repeat(30,1fr);gap:3px;height:14px}.seg{height:14px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}

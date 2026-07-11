@@ -70,20 +70,22 @@ final class AtollActivityPublisher {
                 "plan": usage.plan ?? ""
             ],
             "tab": [
-                "title": "Codex",
+                // Atoll currently always reserves a native tab header. An invisible
+                // title removes the duplicated "Codex" text while preserving the
+                // tab's icon in Atoll's extension ecosystem.
+                "title": "\u{200B}",
                 "iconSymbolName": "chevron.left.forwardslash.chevron.right",
-                "preferredHeight": 250,
+                "preferredHeight": 220,
                 "allowWebInteraction": true,
                 "sections": [],
                 "webContent": [
                     "html": dashboardHTML(for: usage),
-                    "preferredHeight": 178,
+                    "preferredHeight": 112,
                     "isTransparent": true,
                     "allowLocalhostRequests": false,
                     "allowRemoteRequests": false,
                     "maximumContentWidth": 640
-                ],
-                "footnote": footerText(for: usage)
+                ]
             ]
         ]
     }
@@ -107,18 +109,18 @@ final class AtollActivityPublisher {
         return """
         <!doctype html><html><head><meta charset="utf-8"><style>
         *{box-sizing:border-box}html,body{margin:0;background:transparent;color:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;overflow:hidden}
-        body{height:178px;outline:none}.wrap{position:relative;height:178px;padding:20px 10px 0}
-        .identity{height:25px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}.openai{width:19px;height:19px;color:#f5f6f8;filter:drop-shadow(0 0 5px #ffffff28)}.pill{font-size:10px;font-weight:800;color:#d4d4da;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:3px 7px;letter-spacing:.45px}
-        .pages{position:relative;height:101px}.page{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;gap:30px;opacity:0;transform:translateX(16px);transition:opacity .18s ease,transform .18s ease}.page.active{opacity:1;transform:translateX(0)}
-        .metric{padding-top:2px}.row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px}.label{font-size:13px;color:#a8aab3;font-weight:800}.value-line{display:flex;align-items:baseline;gap:8px}.value{font-size:28px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:13px;color:#a8aab3;margin-left:2px}.inline-reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:750;color:#848792;white-space:nowrap}
-        .bar{display:grid;grid-template-columns:repeat(34,1fr);gap:3px;height:18px;margin-bottom:8px}.seg{height:18px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}.reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:750;color:#a6a8b0}
-        .stats{grid-template-columns:1fr 1fr 1fr;gap:18px;padding:4px 14px 0}.stat{padding-top:3px}.stat:not(:last-child){border-right:1px solid #ffffff12}.big{font-size:31px;font-weight:820;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1}.cap{font-size:11px;color:#a8aab3;font-weight:750;margin-top:7px}.subcap{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:#737680;margin-top:4px}.na{color:#858995;text-shadow:none}.status{position:absolute;right:10px;bottom:0;font-size:12px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:8px;height:8px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:7px}
-        .nav{position:absolute;left:8px;bottom:3px;display:flex;gap:7px}.nav button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:#ffffff45}.nav button.active{background:#fff}.hint{position:absolute;left:36px;bottom:0;font-size:11px;color:#ffffff45;font-weight:700}
-        </style></head><body tabindex="0"><div class="wrap"><div class="identity"><svg class="openai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-label="OpenAI"><path d="M12 3.2a4.3 4.3 0 0 1 7.37 3.03 4.3 4.3 0 0 1 1.95 7.73 4.3 4.3 0 0 1-5.41 5.83A4.3 4.3 0 0 1 8.63 20a4.3 4.3 0 0 1-5.95-5.3A4.3 4.3 0 0 1 4.6 7.04 4.3 4.3 0 0 1 12 3.2Z"/><path d="m8.1 7.1 7.8 4.5v8.1M4.7 14.5l7.3-4.2 7.2 4.2M12 3.2v8.4l-7.3 4.2"/></svg><div class="pill">\(plan)</div></div>
+        body{height:112px;outline:none}.wrap{position:relative;height:112px;padding:4px 10px 0}
+        .pages{position:relative;height:84px}.page{position:absolute;inset:0;display:grid;opacity:0;transform:translateX(16px);transition:opacity .18s ease,transform .18s ease}.page.active{opacity:1;transform:translateX(0)}.quota{grid-template-columns:102px minmax(0,1fr) minmax(0,1fr);gap:24px}.identity{height:60px;display:flex;align-items:center;justify-content:flex-start;gap:7px}.openai{width:21px;height:21px;color:#f5f6f8;filter:drop-shadow(0 0 5px #ffffff28)}.pill{font-size:10px;font-weight:800;color:#d4d4da;background:#ffffff16;border:1px solid #ffffff12;border-radius:5px;padding:3px 7px;letter-spacing:.45px}
+        .metric{padding-top:11px}.row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}.label{font-size:13px;color:#a8aab3;font-weight:800;white-space:nowrap}.value-line{display:flex;align-items:baseline;gap:7px}.value{font-size:26px;font-weight:850;line-height:.85;letter-spacing:.2px}.value span{font-size:12px;color:#a8aab3;margin-left:2px}.inline-reset{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:750;color:#848792;white-space:nowrap}
+        .bar{display:grid;grid-template-columns:repeat(30,1fr);gap:3px;height:14px}.seg{height:14px;border-radius:3px;background:#ffffff13}.seg.on{background:#75c6ff;box-shadow:0 0 7px #58baff70}
+        .stats{grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 8px 0}.stat{padding:2px 16px}.stat:not(:last-child){border-right:1px solid #ffffff12}.big{font-size:27px;font-weight:820;color:#73c4ff;text-shadow:0 0 15px #4db3ff70;line-height:1}.cap{font-size:11px;color:#a8aab3;font-weight:750;margin-top:6px}.subcap{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;color:#737680;margin-top:3px}.na{color:#858995;text-shadow:none}.status{position:absolute;right:10px;bottom:0;font-size:11px;font-weight:760;color:#d9dbe2}.dotgreen{display:inline-block;width:7px;height:7px;border-radius:50%;background:#30d98b;box-shadow:0 0 8px #30d98b;margin-right:6px}
+        .nav{position:absolute;left:8px;bottom:3px;display:flex;gap:6px}.nav button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:#ffffff45}.nav button.active{background:#fff}.hint{position:absolute;left:32px;bottom:0;font-size:10px;color:#ffffff45;font-weight:700}
+        </style></head><body tabindex="0"><div class="wrap">
         <div class="pages">
-        <section class="page active" id="p0">
-        <div class="metric"><div class="row"><div class="label">5h</div><div class="value-line"><div class="inline-reset">\(fiveReset)</div><div class="value">\(five)<span>%</span></div></div></div><div class="bar">\(fiveBars)</div><div class="reset">quota remaining</div></div>
-        <div class="metric"><div class="row"><div class="label">1 week</div><div class="value-line"><div class="inline-reset">\(weeklyReset)</div><div class="value">\(week)<span>%</span></div></div></div><div class="bar">\(weekBars)</div><div class="reset">quota remaining</div></div>
+        <section class="page quota active" id="p0">
+        <div class="identity"><svg class="openai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-label="OpenAI"><path d="M12 3.2a4.3 4.3 0 0 1 7.37 3.03 4.3 4.3 0 0 1 1.95 7.73 4.3 4.3 0 0 1-5.41 5.83A4.3 4.3 0 0 1 8.63 20a4.3 4.3 0 0 1-5.95-5.3A4.3 4.3 0 0 1 4.6 7.04 4.3 4.3 0 0 1 12 3.2Z"/><path d="m8.1 7.1 7.8 4.5v8.1M4.7 14.5l7.3-4.2 7.2 4.2M12 3.2v8.4l-7.3 4.2"/></svg><div class="pill">\(plan)</div></div>
+        <div class="metric"><div class="row"><div class="label">5h</div><div class="value-line"><div class="inline-reset">\(fiveReset)</div><div class="value">\(five)<span>%</span></div></div></div><div class="bar">\(fiveBars)</div></div>
+        <div class="metric"><div class="row"><div class="label">1 week</div><div class="value-line"><div class="inline-reset">\(weeklyReset)</div><div class="value">\(week)<span>%</span></div></div></div><div class="bar">\(weekBars)</div></div>
         </section>
         <section class="page stats" id="p1">
         <div class="stat"><div class="big">\(fiveUsed)<span style="font-size:15px;color:#8da3b8">%</span></div><div class="cap">5h used</div><div class="subcap">\(fiveReset)</div></div>
@@ -132,8 +134,9 @@ final class AtollActivityPublisher {
     }
 
     private func barSegments(filledPercent: Int) -> String {
-        let filled = max(0, min(34, Int((Double(filledPercent) / 100 * 34).rounded())))
-        return (0..<34).map { index in
+        let segmentCount = 30
+        let filled = max(0, min(segmentCount, Int((Double(filledPercent) / 100 * Double(segmentCount)).rounded())))
+        return (0..<segmentCount).map { index in
             "<i class=\"seg\(index < filled ? " on" : "")\"></i>"
         }.joined()
     }

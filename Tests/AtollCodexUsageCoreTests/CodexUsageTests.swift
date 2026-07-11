@@ -7,6 +7,7 @@ enum CodexUsageTests {
 
     static func main() {
         run("decodes both Codex windows", decodesBothCodexWindows)
+        run("ignores additional model limits", ignoresAdditionalModelLimits)
         run("clamps invalid percentages", clampsInvalidPercentages)
         run("rejects a missing window", rejectsMissingWindow)
         run("rejects a missing percentage", rejectsMissingPercentage)
@@ -64,6 +65,32 @@ enum CodexUsageTests {
 
         try expect(usage.fiveHour.usedPercent == 0, "negative usage should clamp to zero")
         try expect(usage.weekly.usedPercent == 100, "usage above 100 should clamp to 100")
+    }
+
+    private static func ignoresAdditionalModelLimits() throws {
+        let data = Data("""
+        {
+          "plan_type": "pro",
+          "rate_limit": {
+            "primary_window": { "used_percent": 14, "reset_at": 1783805450 },
+            "secondary_window": { "used_percent": 6, "reset_at": 1784354762 }
+          },
+          "additional_rate_limits": [
+            {
+              "limit_name": "GPT-5.3-Codex-Spark",
+              "rate_limit": {
+                "primary_window": { "used_percent": 0, "reset_at": 1783808493 },
+                "secondary_window": { "used_percent": 0, "reset_at": 1784395293 }
+              }
+            }
+          ]
+        }
+        """.utf8)
+
+        let usage = try CodexUsageFetcher.decode(data: data)
+
+        try expect(usage.fiveHour.remainingPercent == 86, "should use the first 5h limit")
+        try expect(usage.weekly.remainingPercent == 94, "should use the first weekly limit")
     }
 
     private static func rejectsMissingWindow() throws {

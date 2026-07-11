@@ -198,10 +198,12 @@ public struct CodexUsageFetcher: Sendable {
     }
 
     public static func decode(data: Data) throws -> CodexUsage {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let limits = object["rate_limit"] as? [String: Any],
-              let primary = parseWindow(limits["primary_window"]),
-              let secondary = parseWindow(limits["secondary_window"])
+        // The response can also contain `additional_rate_limits`, including a
+        // separate GPT-5.3-Codex-Spark allowance. Decode only the top-level
+        // `rate_limit`, which is the first/default allowance shown by /status.
+        guard let response = try? JSONDecoder().decode(UsageResponse.self, from: data),
+              let primary = parseWindow(response.rateLimit.primaryWindow),
+              let secondary = parseWindow(response.rateLimit.secondaryWindow)
         else {
             throw CodexUsageError.malformedResponse
         }
@@ -209,26 +211,46 @@ public struct CodexUsageFetcher: Sendable {
         return CodexUsage(
             fiveHour: primary,
             weekly: secondary,
-            plan: object["plan_type"] as? String
+            plan: response.planType
         )
     }
 
-    private static func parseWindow(_ value: Any?) -> WindowUsage? {
-        guard let window = value as? [String: Any],
-              let usedPercent = number(window["used_percent"]),
-              usedPercent.isFinite
-        else {
+    private static func parseWindow(_ window: UsageWindow) -> WindowUsage? {
+        guard window.usedPercent.isFinite else {
             return nil
         }
 
-        let resetAt = number(window["reset_at"]).map(Date.init(timeIntervalSince1970:))
-        return WindowUsage(usedFraction: usedPercent / 100, resetAt: resetAt)
+        let resetAt = window.resetAt.map(Date.init(timeIntervalSince1970:))
+        return WindowUsage(usedFraction: window.usedPercent / 100, resetAt: resetAt)
     }
 
-    private static func number(_ value: Any?) -> Double? {
-        if let value = value as? Double { return value }
-        if let value = value as? Int { return Double(value) }
-        if let value = value as? NSNumber { return value.doubleValue }
-        return nil
+    private struct UsageResponse: Decodable {
+        let planType: String?
+        let rateLimit: RateLimit
+
+        private enum CodingKeys: String, CodingKey {
+            case planType = "plan_type"
+            case rateLimit = "rate_limit"
+        }
+    }
+
+    private struct RateLimit: Decodable {
+        let primaryWindow: UsageWindow
+        let secondaryWindow: UsageWindow
+
+        private enum CodingKeys: String, CodingKey {
+            case primaryWindow = "primary_window"
+            case secondaryWindow = "secondary_window"
+        }
+    }
+
+    private struct UsageWindow: Decodable {
+        let usedPercent: Double
+        let resetAt: Double?
+
+        private enum CodingKeys: String, CodingKey {
+            case usedPercent = "used_percent"
+            case resetAt = "reset_at"
+        }
     }
 }

@@ -59,7 +59,7 @@ final class UsageController: ObservableObject {
             lastUpdated = Date()
             status = usage.notchText
             if displayEnabled {
-                try await withTimeout(seconds: 5) {
+                try await withTimeout(seconds: 12) {
                     try await self.publisher.publish(usage)
                 }
             }

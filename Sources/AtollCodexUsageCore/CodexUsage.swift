@@ -101,7 +101,9 @@ public struct CodexUsageFetcher: Sendable {
         var request = URLRequest(url: endpoint)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 20
+        // Fail quickly so the curl transport fallback can still complete within
+        // the extension's initial refresh window on affected TLS setups.
+        request.timeoutInterval = 4
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)

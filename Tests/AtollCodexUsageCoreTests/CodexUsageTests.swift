@@ -47,7 +47,7 @@ enum CodexUsageTests {
         try expect(usage.fiveHour.usedPercent == 32, "5h should be 32%")
         try expect(usage.weekly.usedPercent == 61, "1w should be 61%")
         try expect(usage.plan == "pro", "plan should be pro")
-        try expect(usage.notchText == "5h 32% · 1w 61%", "notch text should match")
+        try expect(usage.notchText == "5h 68% left · 1w 39% left", "notch text should match")
     }
 
     private static func clampsInvalidPercentages() throws {

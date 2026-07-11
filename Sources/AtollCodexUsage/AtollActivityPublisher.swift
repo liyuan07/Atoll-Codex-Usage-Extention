@@ -4,10 +4,12 @@ import Foundation
 @MainActor
 final class AtollActivityPublisher {
     static let activityID = "codex-usage"
+    static let experienceID = "codex-usage-tab"
 
     private let client: AtollRPCClient
     private let bundleIdentifier = "dev.atoll.extensions.codexusage"
     private(set) var isPresented = false
+    private var dismissedLegacyLiveActivity = false
 
     init(client: AtollRPCClient = AtollRPCClient()) {
         self.client = client
@@ -22,13 +24,21 @@ final class AtollActivityPublisher {
     }
 
     func publish(_ usage: CodexUsage) async throws {
-        let descriptor = makeDescriptor(usage)
-        let method = isPresented ? "atoll.updateLiveActivity" : "atoll.presentLiveActivity"
+        if !dismissedLegacyLiveActivity {
+            _ = try? await client.call(
+                method: "atoll.dismissLiveActivity",
+                params: ["activityID": Self.activityID, "bundleIdentifier": bundleIdentifier]
+            )
+            dismissedLegacyLiveActivity = true
+        }
+
+        let descriptor = makeNotchExperienceDescriptor(usage)
+        let method = isPresented ? "atoll.updateNotchExperience" : "atoll.presentNotchExperience"
 
         do {
             _ = try await client.call(method: method, params: ["descriptor": descriptor])
         } catch where isPresented {
-            _ = try await client.call(method: "atoll.presentLiveActivity", params: ["descriptor": descriptor])
+            _ = try await client.call(method: "atoll.presentNotchExperience", params: ["descriptor": descriptor])
         }
 
         isPresented = true
@@ -37,8 +47,8 @@ final class AtollActivityPublisher {
     func dismiss() async {
         guard isPresented else { return }
         _ = try? await client.call(
-            method: "atoll.dismissLiveActivity",
-            params: ["activityID": Self.activityID, "bundleIdentifier": bundleIdentifier]
+            method: "atoll.dismissNotchExperience",
+            params: ["experienceID": Self.experienceID, "bundleIdentifier": bundleIdentifier]
         )
         isPresented = false
     }
@@ -48,45 +58,104 @@ final class AtollActivityPublisher {
         // keep a callback channel open. Manual Hide/Show remains available.
     }
 
-    private func makeDescriptor(_ usage: CodexUsage) -> [String: Any] {
-        var descriptor: [String: Any] = [
-            "id": Self.activityID,
+    private func makeNotchExperienceDescriptor(_ usage: CodexUsage) -> [String: Any] {
+        [
+            "id": Self.experienceID,
             "bundleIdentifier": bundleIdentifier,
-            "priority": "low",
-            "title": "Codex usage",
-            "leadingIcon": [
-                "type": "symbol",
-                "name": "chevron.left.forwardslash.chevron.right",
-                "size": 15,
-                "weight": "semibold"
-            ],
-            "trailingContent": [
-                "type": "text",
-                "text": usage.notchText,
-                "font": [
-                    "size": 11,
-                    "weight": "semibold",
-                    "design": "default",
-                    "isMonospacedDigit": true
-                ],
-                "color": ["red": 1, "green": 1, "blue": 1, "alpha": 1]
-            ],
-            "progress": 0,
-            "accentColor": ["red": 0.25, "green": 0.85, "blue": 0.68, "alpha": 1],
-            "allowsMusicCoexistence": true,
+            "priority": "normal",
+            "accentColor": accentColor(),
             "metadata": [
                 "fiveHourReset": resetString(usage.fiveHour.resetAt),
-                "weeklyReset": resetString(usage.weekly.resetAt)
+                "weeklyReset": resetString(usage.weekly.resetAt),
+                "plan": usage.plan ?? ""
             ],
-            "centerTextStyle": "inheritUser",
-            "sneakPeekConfig": ["enabled": false, "showOnUpdate": false]
+            "tab": [
+                "title": "Codex",
+                "iconSymbolName": "chevron.left.forwardslash.chevron.right",
+                "preferredHeight": 260,
+                "allowWebInteraction": false,
+                "sections": [
+                    quotaSection(
+                        title: "5-hour quota",
+                        subtitle: resetDescription(usage.fiveHour.resetAt),
+                        remainingPercent: usage.fiveHour.remainingPercent,
+                        remainingFraction: usage.fiveHour.remainingFraction
+                    ),
+                    quotaSection(
+                        title: "Weekly quota",
+                        subtitle: resetDescription(usage.weekly.resetAt),
+                        remainingPercent: usage.weekly.remainingPercent,
+                        remainingFraction: usage.weekly.remainingFraction
+                    )
+                ],
+                "footnote": footerText(for: usage)
+            ]
         ]
+    }
 
-        if let plan = usage.plan {
-            descriptor["subtitle"] = plan.uppercased()
+    private func quotaSection(
+        title: String,
+        subtitle: String,
+        remainingPercent: Int,
+        remainingFraction: Double
+    ) -> [String: Any] {
+        [
+            "title": title,
+            "subtitle": subtitle,
+            "layout": "stack",
+            "elements": [
+                textElement("\(remainingPercent)% left", size: 22, weight: "bold"),
+                progressElement(remainingFraction)
+            ]
+        ]
+    }
+
+    private func textElement(_ text: String, size: Double, weight: String) -> [String: Any] {
+        [
+            "type": "text",
+            "text": text,
+            "font": [
+                "size": size,
+                "weight": weight,
+                "design": "default",
+                "isMonospacedDigit": true
+            ],
+            "color": ["red": 1, "green": 1, "blue": 1, "alpha": 1],
+            "alignment": "leading"
+        ]
+    }
+
+    private func progressElement(_ remainingFraction: Double) -> [String: Any] {
+        [
+            "type": "progress",
+            "indicator": [
+                "type": "bar",
+                "height": 6,
+                "cornerRadius": 3,
+                "color": accentColor()
+            ],
+            "value": remainingFraction,
+            "color": accentColor()
+        ]
+    }
+
+    private func accentColor() -> [String: Any] {
+        ["red": 0.25, "green": 0.85, "blue": 0.68, "alpha": 1]
+    }
+
+    private func resetDescription(_ date: Date?) -> String {
+        guard let date else { return "Reset time unavailable" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return "Resets at \(formatter.string(from: date))"
+    }
+
+    private func footerText(for usage: CodexUsage) -> String {
+        if let plan = usage.plan, !plan.isEmpty {
+            return "\(plan.uppercased()) · Updated every 5 minutes"
         }
-
-        return descriptor
+        return "Updated every 5 minutes"
     }
 
     private func resetString(_ date: Date?) -> String {

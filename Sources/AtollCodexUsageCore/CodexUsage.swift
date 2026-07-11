@@ -12,6 +12,14 @@ public struct WindowUsage: Equatable, Sendable {
     public var usedPercent: Int {
         Int((usedFraction * 100).rounded())
     }
+
+    public var remainingFraction: Double {
+        1 - usedFraction
+    }
+
+    public var remainingPercent: Int {
+        Int((remainingFraction * 100).rounded())
+    }
 }
 
 public struct CodexUsage: Equatable, Sendable {
@@ -26,7 +34,7 @@ public struct CodexUsage: Equatable, Sendable {
     }
 
     public var notchText: String {
-        "5h \(fiveHour.usedPercent)% · 1w \(weekly.usedPercent)%"
+        "5h \(fiveHour.remainingPercent)% left · 1w \(weekly.remainingPercent)% left"
     }
 }
 
@@ -143,4 +151,3 @@ public struct CodexUsageFetcher: Sendable {
         return nil
     }
 }
-

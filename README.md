@@ -1,13 +1,13 @@
 # Atoll Codex Usage
 
 An independent macOS menu-bar extension that displays Codex's 5-hour and
-weekly used quota in an Atoll Live Activity. It talks to Atoll through Atoll's
+weekly remaining quota in an Atoll notch tab. It talks to Atoll through Atoll's
 local JSON-RPC WebSocket server on port 9020.
 
 ## Requirements
 
 - macOS 13 or later
-- Atoll with third-party extensions and extension live activities enabled
+- Atoll with third-party extensions and extension notch tabs enabled
 - Atoll's RPC server listening on localhost port 9020
 - A logged-in Codex CLI (`codex login`)
 
@@ -19,8 +19,9 @@ open build/AtollCodexUsage.app
 ```
 
 On first launch, the extension registers itself with Atoll over RPC and should
-appear under Atoll Settings -> Extensions. The app reads the Codex CLI access
-token from `~/.codex/auth.json` only to make a request to
+appear under Atoll Settings -> Extensions. Open or hover Atoll's notch and use
+the Codex extension tab to view the quota panel. The app reads the Codex CLI
+access token from `~/.codex/auth.json` only to make a request to
 `chatgpt.com/backend-api/wham/usage`; it never persists, logs, or refreshes
 that token. The refresh interval is five minutes.
 

@@ -107,8 +107,14 @@ final class AtollActivityPublisher {
 
     private func dashboardHTML(for usage: CodexUsage) -> String {
         let plan = htmlEscape((usage.plan ?? "plus").uppercased())
-        let fiveReset = htmlEscape(resetTimeDescription(usage.fiveHour.resetAt))
-        let weeklyReset = htmlEscape(resetTimeDescription(usage.weekly.resetAt))
+        let fiveReset = htmlEscape(CodexResetTimeFormatter.description(
+            for: usage.fiveHour.resetAt,
+            includeDate: false
+        ))
+        let weeklyReset = htmlEscape(CodexResetTimeFormatter.description(
+            for: usage.weekly.resetAt,
+            includeDate: true
+        ))
         let five = usage.fiveHour.remainingPercent
         let week = usage.weekly.remainingPercent
         let fiveHourTokens = compactTokenCount(usage.tokenUsage.fiveHour)
@@ -169,15 +175,6 @@ final class AtollActivityPublisher {
         if days > 0 { return "in \(days)d" }
         if hours > 0 { return "in \(hours)h" }
         return "in \(max(1, minutes))m"
-    }
-
-    private func resetTimeDescription(_ date: Date?) -> String {
-        guard let date else { return "reset —" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "HH:mm"
-        return "↻ \(formatter.string(from: date))"
     }
 
     private func htmlEscape(_ value: String) -> String {

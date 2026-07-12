@@ -22,6 +22,22 @@ public struct WindowUsage: Equatable, Sendable {
     }
 }
 
+public enum CodexResetTimeFormatter {
+    public static func description(
+        for date: Date?,
+        includeDate: Bool,
+        timeZone: TimeZone = .current
+    ) -> String {
+        guard let date else { return "reset —" }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = includeDate ? "HH:mm 'on' d MMM" : "HH:mm"
+        return "↻ \(formatter.string(from: date))"
+    }
+}
+
 public struct CodexUsage: Equatable, Sendable {
     public let fiveHour: WindowUsage
     public let weekly: WindowUsage

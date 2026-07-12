@@ -11,6 +11,7 @@ enum CodexUsageTests {
         run("clamps invalid percentages", clampsInvalidPercentages)
         run("rejects a missing window", rejectsMissingWindow)
         run("rejects a missing percentage", rejectsMissingPercentage)
+        run("formats reset times like Codex status", formatsResetTimesLikeCodexStatus)
 
         if failures > 0 {
             exit(1)
@@ -122,6 +123,27 @@ enum CodexUsageTests {
         } catch let error as CodexUsageError {
             try expect(error == .malformedResponse, "wrong missing-percentage error")
         }
+    }
+
+    private static func formatsResetTimesLikeCodexStatus() throws {
+        let resetAt = Date(timeIntervalSince1970: 1_784_354_762)
+        guard let shanghai = TimeZone(identifier: "Asia/Shanghai") else {
+            throw TestFailure("Asia/Shanghai time zone should be available")
+        }
+
+        let fiveHour = CodexResetTimeFormatter.description(
+            for: resetAt,
+            includeDate: false,
+            timeZone: shanghai
+        )
+        let weekly = CodexResetTimeFormatter.description(
+            for: resetAt,
+            includeDate: true,
+            timeZone: shanghai
+        )
+
+        try expect(fiveHour == "↻ 14:06", "5h reset should show only the local time")
+        try expect(weekly == "↻ 14:06 on 18 Jul", "weekly reset should include the local date")
     }
 }
 

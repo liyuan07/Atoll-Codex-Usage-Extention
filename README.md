@@ -11,6 +11,18 @@ local JSON-RPC WebSocket server on port 9020.
 - Atoll's RPC server listening on localhost port 9020
 - A logged-in Codex CLI (`codex login`)
 
+## Install
+
+Download the ZIP for your Mac from the
+[latest GitHub Release](https://github.com/liyuan07/Atoll-Codex-Usage-Extention/releases/latest):
+
+- `arm64` for Apple Silicon Macs
+- `x86_64` for Intel Macs
+
+Unzip it, move `AtollCodexUsage.app` to Applications, then right-click the app
+and choose Open on first launch. Release builds are ad-hoc signed, not notarized
+with an Apple Developer certificate.
+
 ## Build and run
 
 ```sh
@@ -64,5 +76,9 @@ instead of that XPC path.
 ```sh
 swift run AtollCodexUsageCoreTests
 ```
+
+Maintainers can publish a release by pushing a semantic version tag such as
+`v0.1.0`. GitHub Actions builds both macOS architectures, creates SHA-256
+checksums, and attaches all four files to the GitHub Release automatically.
 
 The Codex usage parsing was derived from [CodexIsland](https://github.com/ericjypark/codex-island), which is MIT licensed.

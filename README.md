@@ -16,8 +16,7 @@ local JSON-RPC WebSocket server on port 9020.
 Download the ZIP for your Mac from the
 [latest GitHub Release](https://github.com/liyuan07/Atoll-Codex-Usage-Extention/releases/latest):
 
-- `arm64` for Apple Silicon Macs
-- `x86_64` for Intel Macs
+- `arm64` for Apple Silicon Macs with an M-series chip
 
 Unzip it, move `AtollCodexUsage.app` to Applications, then right-click the app
 and choose Open on first launch. Release builds are ad-hoc signed, not notarized
@@ -78,7 +77,7 @@ swift run AtollCodexUsageCoreTests
 ```
 
 Maintainers can publish a release by pushing a semantic version tag such as
-`v0.1.0`. GitHub Actions builds both macOS architectures, creates SHA-256
-checksums, and attaches all four files to the GitHub Release automatically.
+`v0.1.0`. GitHub Actions builds the Apple Silicon version, creates a SHA-256
+checksum, and attaches both files to the GitHub Release automatically.
 
 The Codex usage parsing was derived from [CodexIsland](https://github.com/ericjypark/codex-island), which is MIT licensed.

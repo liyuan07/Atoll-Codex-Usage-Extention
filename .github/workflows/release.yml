@@ -10,15 +10,8 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.arch }}
-    strategy:
-      matrix:
-        include:
-          - runner: macos-15
-            arch: arm64
-          - runner: macos-15-intel
-            arch: x86_64
-    runs-on: ${{ matrix.runner }}
+    name: Build arm64
+    runs-on: macos-15
     steps:
       - name: Check out source
         uses: actions/checkout@v6
@@ -26,12 +19,12 @@ jobs:
       - name: Package application
         env:
           VERSION: ${{ github.ref_name }}
-        run: bash scripts/package-release.sh "${VERSION#v}" "${{ matrix.arch }}"
+        run: bash scripts/package-release.sh "${VERSION#v}" arm64
 
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
-          name: AtollCodexUsage-${{ matrix.arch }}
+          name: AtollCodexUsage-arm64
           path: |
             build/release/*.zip
             build/release/*.sha256

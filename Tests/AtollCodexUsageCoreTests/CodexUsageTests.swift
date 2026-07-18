@@ -7,9 +7,10 @@ enum CodexUsageTests {
 
     static func main() {
         run("decodes both Codex windows", decodesBothCodexWindows)
+        run("classifies the current weekly-only response", classifiesCurrentWeeklyOnlyResponse)
         run("ignores additional model limits", ignoresAdditionalModelLimits)
         run("clamps invalid percentages", clampsInvalidPercentages)
-        run("accepts an omitted weekly window", acceptsOmittedWeeklyWindow)
+        run("marks an omitted weekly window unavailable", marksOmittedWeeklyWindowUnavailable)
         run("rejects a missing primary window", rejectsMissingPrimaryWindow)
         run("rejects a missing percentage", rejectsMissingPercentage)
         run("formats reset times like Codex status", formatsResetTimesLikeCodexStatus)
@@ -39,8 +40,16 @@ enum CodexUsageTests {
         {
           "plan_type": "pro",
           "rate_limit": {
-            "primary_window": { "used_percent": 32.4, "reset_at": 1760000000 },
-            "secondary_window": { "used_percent": 61, "reset_at": 1760500000 }
+            "primary_window": {
+              "used_percent": 32.4,
+              "reset_at": 1760000000,
+              "limit_window_seconds": 18000
+            },
+            "secondary_window": {
+              "used_percent": 61,
+              "reset_at": 1760500000,
+              "limit_window_seconds": 604800
+            }
           }
         }
         """.utf8)
@@ -51,6 +60,31 @@ enum CodexUsageTests {
         try expect(usage.weekly.usedPercent == 61, "1w should be 61%")
         try expect(usage.plan == "pro", "plan should be pro")
         try expect(usage.notchText == "5h 68% left · 1w 39% left", "notch text should match")
+    }
+
+    private static func classifiesCurrentWeeklyOnlyResponse() throws {
+        let data = Data("""
+        {
+          "plan_type": "pro",
+          "rate_limit": {
+            "primary_window": {
+              "used_percent": 18,
+              "reset_at": 1784950838,
+              "reset_after_seconds": 569022,
+              "limit_window_seconds": 604800
+            },
+            "secondary_window": null
+          }
+        }
+        """.utf8)
+
+        let usage = try CodexUsageFetcher.decode(data: data)
+
+        try expect(!usage.fiveHour.isAvailable, "missing 5h window should be unavailable")
+        try expect(usage.fiveHour.remainingPercent == nil, "missing 5h percentage should not be fabricated")
+        try expect(usage.weekly.remainingPercent == 82, "weekly remaining usage should be 82%")
+        try expect(usage.weekly.resetAt == Date(timeIntervalSince1970: 1_784_950_838), "weekly reset should decode")
+        try expect(usage.notchText == "5h — left · 1w 82% left", "notch text should show an unavailable 5h window")
     }
 
     private static func clampsInvalidPercentages() throws {
@@ -95,14 +129,15 @@ enum CodexUsageTests {
         try expect(usage.weekly.remainingPercent == 94, "should use the first weekly limit")
     }
 
-    private static func acceptsOmittedWeeklyWindow() throws {
+    private static func marksOmittedWeeklyWindowUnavailable() throws {
         let data = Data("""
         { "rate_limit": { "primary_window": { "used_percent": 20 } } }
         """.utf8)
 
         let usage = try CodexUsageFetcher.decode(data: data)
         try expect(usage.fiveHour.usedPercent == 20, "5h should still decode")
-        try expect(usage.weekly.remainingPercent == 100, "missing weekly window should be fresh")
+        try expect(!usage.weekly.isAvailable, "missing weekly window should be unavailable")
+        try expect(usage.weekly.remainingPercent == nil, "missing weekly percentage should not be fabricated")
         try expect(usage.weekly.resetAt == nil, "missing weekly reset should remain unavailable")
     }
 

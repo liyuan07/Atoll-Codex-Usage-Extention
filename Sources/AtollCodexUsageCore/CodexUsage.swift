@@ -3,22 +3,32 @@ import Foundation
 public struct WindowUsage: Equatable, Sendable {
     public let usedFraction: Double
     public let resetAt: Date?
+    public let isAvailable: Bool
 
-    public init(usedFraction: Double, resetAt: Date?) {
+    public init(usedFraction: Double, resetAt: Date?, isAvailable: Bool = true) {
         self.usedFraction = min(max(usedFraction, 0), 1)
         self.resetAt = resetAt
+        self.isAvailable = isAvailable
     }
 
-    public var usedPercent: Int {
-        Int((usedFraction * 100).rounded())
+    public static let unavailable = WindowUsage(
+        usedFraction: 0,
+        resetAt: nil,
+        isAvailable: false
+    )
+
+    public var usedPercent: Int? {
+        guard isAvailable else { return nil }
+        return Int((usedFraction * 100).rounded())
     }
 
-    public var remainingFraction: Double {
-        1 - usedFraction
+    public var remainingFraction: Double? {
+        guard isAvailable else { return nil }
+        return 1 - usedFraction
     }
 
-    public var remainingPercent: Int {
-        Int((remainingFraction * 100).rounded())
+    public var remainingPercent: Int? {
+        remainingFraction.map { Int(($0 * 100).rounded()) }
     }
 }
 
@@ -57,7 +67,9 @@ public struct CodexUsage: Equatable, Sendable {
     }
 
     public var notchText: String {
-        "5h \(fiveHour.remainingPercent)% left · 1w \(weekly.remainingPercent)% left"
+        let fiveHourText = fiveHour.remainingPercent.map { "\($0)%" } ?? "—"
+        let weeklyText = weekly.remainingPercent.map { "\($0)%" } ?? "—"
+        return "5h \(fiveHourText) left · 1w \(weeklyText) left"
     }
 }
 
@@ -218,22 +230,65 @@ public struct CodexUsageFetcher: Sendable {
         // separate GPT-5.3-Codex-Spark allowance. Decode only the top-level
         // `rate_limit`, which is the first/default allowance shown by /status.
         guard let response = try? JSONDecoder().decode(UsageResponse.self, from: data),
-              let primary = parseWindow(response.rateLimit.primaryWindow)
+              parseWindow(response.rateLimit.primaryWindow) != nil
         else {
             throw CodexUsageError.malformedResponse
         }
-        // The service can omit `secondary_window` immediately after a weekly
-        // reset. In that state the weekly allowance is fresh; use a full
-        // allowance until the server begins returning the window again.
-        let secondary = response.rateLimit.secondaryWindow
-            .flatMap(parseWindow)
-            ?? WindowUsage(usedFraction: 0, resetAt: nil)
+
+        var fiveHour: WindowUsage?
+        var weekly: WindowUsage?
+        var unclassified: [(index: Int, usage: WindowUsage)] = []
+        let windows = [response.rateLimit.primaryWindow, response.rateLimit.secondaryWindow]
+
+        for (index, window) in windows.enumerated() {
+            guard let window, let usage = parseWindow(window) else { continue }
+            switch windowKind(for: window) {
+            case .fiveHour:
+                if fiveHour == nil { fiveHour = usage }
+            case .weekly:
+                if weekly == nil { weekly = usage }
+            case nil:
+                unclassified.append((index, usage))
+            }
+        }
+
+        // Older responses omitted `limit_window_seconds`. Retain their
+        // positional primary=5h / secondary=weekly meaning only for windows
+        // that cannot be classified from server-provided duration metadata.
+        for entry in unclassified {
+            if entry.index == 0, fiveHour == nil {
+                fiveHour = entry.usage
+            } else if entry.index == 1, weekly == nil {
+                weekly = entry.usage
+            } else if fiveHour == nil {
+                fiveHour = entry.usage
+            } else if weekly == nil {
+                weekly = entry.usage
+            }
+        }
 
         return CodexUsage(
-            fiveHour: primary,
-            weekly: secondary,
+            fiveHour: fiveHour ?? .unavailable,
+            weekly: weekly ?? .unavailable,
             plan: response.planType
         )
+    }
+
+    private enum WindowKind {
+        case fiveHour
+        case weekly
+    }
+
+    private static func windowKind(for window: UsageWindow) -> WindowKind? {
+        guard let seconds = window.limitWindowSeconds else { return nil }
+        switch seconds {
+        case 4 * 3_600...6 * 3_600:
+            return .fiveHour
+        case 6 * 24 * 3_600...8 * 24 * 3_600:
+            return .weekly
+        default:
+            return nil
+        }
     }
 
     private static func parseWindow(_ window: UsageWindow) -> WindowUsage? {
@@ -268,10 +323,12 @@ public struct CodexUsageFetcher: Sendable {
     private struct UsageWindow: Decodable {
         let usedPercent: Double
         let resetAt: Double?
+        let limitWindowSeconds: Double?
 
         private enum CodingKeys: String, CodingKey {
             case usedPercent = "used_percent"
             case resetAt = "reset_at"
+            case limitWindowSeconds = "limit_window_seconds"
         }
     }
 }

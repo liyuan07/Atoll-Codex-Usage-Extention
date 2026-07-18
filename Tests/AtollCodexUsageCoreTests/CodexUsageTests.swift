@@ -9,7 +9,8 @@ enum CodexUsageTests {
         run("decodes both Codex windows", decodesBothCodexWindows)
         run("ignores additional model limits", ignoresAdditionalModelLimits)
         run("clamps invalid percentages", clampsInvalidPercentages)
-        run("rejects a missing window", rejectsMissingWindow)
+        run("accepts an omitted weekly window", acceptsOmittedWeeklyWindow)
+        run("rejects a missing primary window", rejectsMissingPrimaryWindow)
         run("rejects a missing percentage", rejectsMissingPercentage)
         run("formats reset times like Codex status", formatsResetTimesLikeCodexStatus)
 
@@ -94,16 +95,27 @@ enum CodexUsageTests {
         try expect(usage.weekly.remainingPercent == 94, "should use the first weekly limit")
     }
 
-    private static func rejectsMissingWindow() throws {
+    private static func acceptsOmittedWeeklyWindow() throws {
         let data = Data("""
         { "rate_limit": { "primary_window": { "used_percent": 20 } } }
         """.utf8)
 
+        let usage = try CodexUsageFetcher.decode(data: data)
+        try expect(usage.fiveHour.usedPercent == 20, "5h should still decode")
+        try expect(usage.weekly.remainingPercent == 100, "missing weekly window should be fresh")
+        try expect(usage.weekly.resetAt == nil, "missing weekly reset should remain unavailable")
+    }
+
+    private static func rejectsMissingPrimaryWindow() throws {
+        let data = Data("""
+        { "rate_limit": { "secondary_window": { "used_percent": 20 } } }
+        """.utf8)
+
         do {
             _ = try CodexUsageFetcher.decode(data: data)
-            throw TestFailure("missing window unexpectedly decoded")
+            throw TestFailure("missing primary window unexpectedly decoded")
         } catch let error as CodexUsageError {
-            try expect(error == .malformedResponse, "wrong missing-window error")
+            try expect(error == .malformedResponse, "wrong missing-primary-window error")
         }
     }
 

@@ -218,11 +218,16 @@ public struct CodexUsageFetcher: Sendable {
         // separate GPT-5.3-Codex-Spark allowance. Decode only the top-level
         // `rate_limit`, which is the first/default allowance shown by /status.
         guard let response = try? JSONDecoder().decode(UsageResponse.self, from: data),
-              let primary = parseWindow(response.rateLimit.primaryWindow),
-              let secondary = parseWindow(response.rateLimit.secondaryWindow)
+              let primary = parseWindow(response.rateLimit.primaryWindow)
         else {
             throw CodexUsageError.malformedResponse
         }
+        // The service can omit `secondary_window` immediately after a weekly
+        // reset. In that state the weekly allowance is fresh; use a full
+        // allowance until the server begins returning the window again.
+        let secondary = response.rateLimit.secondaryWindow
+            .flatMap(parseWindow)
+            ?? WindowUsage(usedFraction: 0, resetAt: nil)
 
         return CodexUsage(
             fiveHour: primary,
@@ -252,7 +257,7 @@ public struct CodexUsageFetcher: Sendable {
 
     private struct RateLimit: Decodable {
         let primaryWindow: UsageWindow
-        let secondaryWindow: UsageWindow
+        let secondaryWindow: UsageWindow?
 
         private enum CodingKeys: String, CodingKey {
             case primaryWindow = "primary_window"
